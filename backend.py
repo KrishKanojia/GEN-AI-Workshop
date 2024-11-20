@@ -4,22 +4,23 @@ from pydantic import BaseModel
 from random import randrange
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from sqlalchemy import func
-app = FastAPI()
 
+app = FastAPI()
 
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
 
-    
-    # id: int | None = Field(default=None, primary_key=True, sa_column_kwargs={"auto_increment": True})
-
-
 class Student(SQLModel, table=True):
-    name: str = Field(index=True, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
     level: int | None = Field(default=0)
-    marks: int
+    marks: int 
     
+class RequestModel(SQLModel):
+    name: str 
+    level: int | None
+    marks: int
 
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
@@ -51,7 +52,8 @@ def get_all_students(
     return students
 
 @app.post("/students", status_code=status.HTTP_201_CREATED)
-def create_student(student: Student, session: SessionDep):
+def create_student(request_model: RequestModel, session: SessionDep):
+    student = Student(name=request_model.name, level=request_model.level, marks=request_model.marks)
     session.add(student)
     session.commit()
     session.refresh(student)
@@ -60,13 +62,12 @@ def create_student(student: Student, session: SessionDep):
 
 @app.get("/students/latest")
 def get_latest_student(session: SessionDep) -> Student:
-    student = session.exec(select(Student).order_by(Student.name)).first()
+    student = session.exec(select(Student).order_by(Student.id.desc())).first()
     return student
 
 @app.get("/student/{name}")
 def get_student_by_name(name: str, session: SessionDep) -> Student:
     student = session.exec(select(Student).where(func.lower(Student.name) == name.lower())).first()
-    print(f"student {student}")
     if not student:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail=f"Student with Name {name} not found")
@@ -82,5 +83,3 @@ def delete_student(name: str, session: SessionDep):
     session.delete(student)
     session.commit()
     return {"message" : f"Student {name} is DELETED SUCCESSFULLY"}
-
-
