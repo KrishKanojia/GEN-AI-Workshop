@@ -1,2 +1,6 @@
 fastapi[standard]
 sqlmodel
+notebook
+textblob
+spacy
+nltk
