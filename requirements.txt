@@ -4,3 +4,4 @@ notebook
 textblob
 spacy
 nltk
+pandas
