@@ -5,3 +5,4 @@ textblob
 spacy
 nltk
 pandas
+scikit-learn
